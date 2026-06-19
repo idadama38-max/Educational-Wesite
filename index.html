@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduSphere - Online Learning</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="authScreen" class="center-screen">
+  <div class="auth-box">
+    <h1>LEARNHUB</h1>
+    <p class="muted">Learn coding, design, and more</p>
+    
+    <div class="tab-buttons">
+      <button id="loginTab" class="tab active" onclick="switchTab('login')">Login</button>
+      <button id="signupTab" class="tab" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" onsubmit="login(event)">
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+
+    <!-- Signup Form -->
+    <form id="signupForm" style="display:none" onsubmit="signup(event)">
+      <input type="text" id="signupName" placeholder="Full Name" required>
+      <input type="email" id="signupEmail" placeholder="Email" required>
+      <input type="password" id="signupPassword" placeholder="Password min 6 chars" required minlength="6">
+      <button type="submit">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display:none">
+  <aside class="sidebar">
+    <h2>LEARNHUB</h2>
+    <nav>
+      <button onclick="showSection('dashboard')" class="active">Dashboard</button>
+      <button onclick="showSection('courses')">Courses</button>
+      <button onclick="showSection('progress')">My Learning</button>
+      <button onclick="showSection('profile')">Profile</button>
+    </nav>
+    <button onclick="logout()" class="logout">Logout</button>
+  </aside>
+
+  <main class="main">
+    <!-- Dashboard -->
+    <section id="dashboard" class="section">
+      <div class="topbar">
+        <h1 id="greeting">Welcome back</h1>
+        <input type="text" id="searchInput" placeholder="Search courses...">
+      </div>
+      
+      <div class="grid">
+        <div class="card stat-card">
+          <h3>Enrolled</h3>
+          <p class="stat" id="enrolled-count">0</p>
+        </div>
+        <div class="card stat-card">
+          <h3>Completed</h3>
+          <p class="stat" id="completed-count">0</p>
+        </div>
+        <div class="card stat-card">
+          <h3>Certificates</h3>
+          <p class="stat" id="cert-count">0</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top:32px">Continue Learning</h2>
+      <div class="course-grid" id="continue-grid">
+        <p class="muted">Enroll in a course to start learning</p>
+      </div>
+
+      <h2 style="margin-top:40px">Popular Courses</h2>
+      <div class="course-grid" id="popular-grid"></div>
+    </section>
+
+    <!-- Courses -->
+    <section id="courses" class="section" style="display:none">
+      <h2>All Courses</h2>
+      <div class="filter-bar">
+        <button onclick="filterCourses('all')" class="filter active">All</button>
+        <button onclick="filterCourses('web')" class="filter">Web Dev</button>
+        <button onclick="filterCourses('data')" class="filter">Data</button>
+        <button onclick="filterCourses('design')" class="filter">Design</button>
+      </div>
+      <div class="course-grid" id="course-grid"></div>
+    </section>
+
+    <!-- Course Detail -->
+    <section id="course-detail" class="section" style="display:none">
+      <button onclick="showSection('courses')" class="back-btn">← Back to Courses</button>
+      <div id="course-detail-content"></div>
+    </section>
+
+    <!-- Progress -->
+    <section id="progress" class="section" style="display:none">
+      <h2>My Learning Progress</h2>
+      <div id="progress-list"></div>
+    </section>
+
+    <!-- Profile -->
+    <section id="profile" class="section" style="display:none">
+      <h2>Profile Settings</h2>
+      <div class="card">
+        <div class="profile-head">
+          <div>
+            <h3 id="profile-name">Student</h3>
+            <p class="muted" id="profile-email">email@example.com</p>
+          </div>
+        </div>
+        <label>Upload Photo</label>
+        <input type="file" id="photoUpload" accept="image/*">
+        
+        <label>About Me</label>
+        <textarea id="bio" placeholder="Tell learners about yourself..." rows="3"></textarea>
+        
+        <label>Skills</label>
+        <input type="text" id="skills" placeholder="HTML, CSS, JavaScript...">
+        
+        <button onclick="saveProfile()">Save Changes</button>
+        
+        <hr>
+        <h4>Certificates Earned</h4>
+        <div id="certificates" class="badge-grid"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// Course data - Computer courses
+const courses = [
+  {
+    id: 1, 
+    title: "Complete Web Development Bootcamp", 
+    desc: "HTML, CSS, JavaScript, React from scratch", 
+    img: "https://picsum.photos/400/200?random=1", 
+    category: "web",
+    level: "Beginner",
+    hours: 40,
+    price: "Free",
+    instructor: "Sarah Kim",
+    lessons: [
+      {title: "HTML5 Fundamentals", video: "https://www.youtube.com/embed/UB1O30fR-EE", duration: "15 min"},
+      {title: "CSS Flexbox & Grid", video: "https://www.youtube.com/embed/srvUrASNj0s", duration: "20 min"},
+      {title: "JavaScript ES6 Basics", video: "https://www.youtube.com/embed/PkZNo7MFNFg", duration: "18 min"},
+      {title: "DOM Manipulation", video: "https://www.youtube.com/embed/y17RuWkWdn8", duration: "22 min"},
+      {title: "Intro to React", video: "https://www.youtube.com/embed/w7ejDZ8SWv8", duration: "25 min"}
+    ]
+  },
+  {
+    id: 2, 
+    title: "Python for Data Science", 
+    desc: "Pandas, NumPy, Matplotlib, ML basics", 
+    img: "https://picsum.photos/400/200?random=2", 
+    category: "data",
+    level: "Intermediate",
+    hours: 35,
+    price: "Free",
+    instructor: "Dr. James",
+    lessons: [
+      {title: "Python Setup & Jupyter", video: "https://www.youtube.com/embed/_uQrJ0TkZlc", duration: "12 min"},
+      {title: "NumPy Arrays", video: "https://www.youtube.com/embed/QUT1VHiLmmI", duration: "16 min"},
+      {title: "Data Visualization", video: "https://www.youtube.com/embed/3Xc3CA655Y4", duration: "18 min"}
+    ]
+  },
+  {
+    id: 3, 
+    title: "UI/UX Design Masterclass", 
+    desc: "Figma, User Research, Prototyping", 
+    img: "https://picsum.photos/400/200?random=3", 
+    category: "design",
+    level: "All Levels",
+    hours: 28,
+    price: "Free",
+    instructor: "Maria",
+    lessons: [
+      {title: "Figma Basics", video: "https://www.youtube.com/embed/c9Wg6Cb_YlU", duration: "17 min"},
+    ]
+  },
+  {
+    id: 4, 
+    title: "Backend with Node.js & Express", 
+    desc: "Build APIs, MongoDB, Authentication", 
+    img: "https://picsum.photos/400/200?random=4", 
+    category: "web",
+    level: "Advanced",
+    hours: 45,
+    price: "Free",
+    instructor: "Alex",
+    lessons: [
+      {title: "Node.js Fundamentals", video: "https://www.youtube.com/embed/fBNz5xF-Kx4", duration: "18 min"},
+      {title: "Express.js Routing", video: "https://www.youtube.com/embed/SccSCuHhOw0", duration: "20 min"},
+    ]
+  },
+  {
+    id: 5, 
+    title: "Machine Learning A-Z", 
+    desc: "Regression, Classification, Neural Networks", 
+    img: "https://picsum.photos/400/200?random=5", 
+    category: "data",
+    level: "Advanced",
+    hours: 50,
+    price: "Free",
+    instructor: "Prof. Rachel ",
+    lessons: [
+      {title: "Logistic Regression", video: "https://www.youtube.com/embed/yIYKR4sgzI8", duration: "18 min"},
+      {title: "Decision Trees", video: "https://www.youtube.com/embed/7eh4d6sabA0", duration: "16 min"},
+      {title: "Neural Networks Intro", video: "https://www.youtube.com/embed/aircAruvnKk", duration: "24 min"}
+    ]
+  },
+  {
+    id: 6, 
+    title: "Git & GitHub for Developers", 
+    desc: "Version control, branches, collaboration", 
+    img: "https://picsum.photos/400/200?random=6", 
+    category: "web",
+    level: "Beginner",
+    hours: 12,
+    price: "Free",
+    instructor: "Adrian",
+    lessons: [
+      {title: "Git Basics", video: "https://www.youtube.com/embed/RGOj5yH7evk", duration: "15 min"},
+      {title: "GitHub Workflows", video: "https://www.youtube.com/embed/DVRQoVRzMIY", duration: "20 min"}
+    ]
+  }
+];
+
+// Auth functions
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab + 'Tab').classList.add('active');
+  
+  if(tab === 'login'){
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('signupForm').style.display = 'none';
+  } else {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('signupForm').style.display = 'block';
+  }
+}
+
+function signup(e){
+  e.preventDefault();
+  const name = document.getElementById('signupName').value;
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  if(users.find(u => u.email === email)){
+    alert('Email already exists!');
+    return;
+  }
+  
+  users.push({name, email, password});
+  localStorage.setItem('users', JSON.stringify(users));
+  localStorage.setItem('currentUser', email);
+  
+  enterApp(name, email);
+}
+
+function login(e){
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const user = users.find(u => u.email === email && u.password === password);
+  
+  if(!user){
+    alert('Invalid email or password');
+    return;
+  }
+  
+  localStorage.setItem('currentUser', email);
+  enterApp(user.name, email);
+}
+
+function enterApp(name, email){
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initApp(name, email);
+}
+
+function logout(){
+  localStorage.removeItem('currentUser');
+  location.reload();
+}
+
+// App init
+function initApp(name, email){
+  document.getElementById('greeting').innerText = `Welcome back, ${name.split(' ')[0]}`;
+  loadProfile(name, email);
+  renderCourses();
+  renderProgress();
+  setupSearch();
+}
+
+// Navigation
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  
+  if(event && event.target){
+    document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+  
+  if(id === 'courses') renderCourses();
+  if(id === 'progress') renderProgress();
+  if(id === 'dashboard') renderDashboard();
+}
+
+// Courses
+function renderCourses(filter = 'all'){
+  const enrolled = JSON.parse(localStorage.getItem(`enrolled_${getUser()}`) || '[]');
+  const grid = document.getElementById('course-grid');
+  const popularGrid = document.getElementById('popular-grid');
+  
+  let filteredCourses = filter === 'all' ? courses : courses.filter(c => c.category === filter);
+  
+  grid.innerHTML = filteredCourses.map(course => courseCard(course, enrolled)).join('');
+  popularGrid.innerHTML = courses.slice(0,3).map(course => courseCard(course, enrolled)).join('');
+}
+
+function courseCard(course, enrolled){
+  const isEnrolled = enrolled.includes(course.id);
+  return `
+    <div class="card course-card" data-title="${course.title}" data-desc="${course.desc}">
+      <img src="${course.img}" alt="${course.title}">
+      <div class="course-badges">
+        <span class="badge">${course.level}</span>
+        <span class="badge">${course.price}</span>
+      </div>
+      <h3>${course.title}</h3>
+      <p class="muted">${course.desc}</p>
+      <p class="muted">👤 ${course.instructor} • ${course.lessons.length} lessons • ${course.hours}h</p>
+      
+      ${!isEnrolled ? 
+        `<button onclick="enrollCourse(${course.id})">Enroll Now</button>` :
+        `<button onclick="openCourse(${course.id})" class="success-btn">Continue Learning →</button>`
+      }
+    </div>
+  `;
+}
+
+function filterCourses(category){
+  document.querySelectorAll('.filter').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderCourses(category);
+}
+
+function enrollCourse(courseId){
+  const user = getUser();
+  let enrolled = JSON.parse(localStorage.getItem(`enrolled_${user}`) || '[]');
+  
+  if(!enrolled.includes(courseId)){
+    enrolled.push(courseId);
+    localStorage.setItem(`enrolled_${user}`, JSON.stringify(enrolled));
+    localStorage.setItem(`progress_${user}_${courseId}`, 0);
+    localStorage.setItem(`completed_${user}_${courseId}`, JSON.stringify([]));
+    alert('Enrolled successfully! Click "Continue Learning" to start.');
+    renderCourses();
+    renderDashboard();
+  }
+}
+
+// Course Detail
+function openCourse(courseId){
+  const course = courses.find(c => c.id === courseId);
+  const user = getUser();
+  const completedLessons = JSON.parse(localStorage.getItem(`completed_${user}_${courseId}`) || '[]');
+  const progress = Math.round((completedLessons.length / course.lessons.length) * 100);
+  
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById('course-detail').style.display = 'block';
+  
+  let lessonsHtml = course.lessons.map((lesson, i) => {
+    const isCompleted = completedLessons.includes(i);
+    return `
+      <div class="card lesson-card">
+        <div class="lesson-header">
+          <div>
+            <b>Lesson ${i+1}: ${lesson.title}</b>
+            <p class="muted">${lesson.duration}</p>
+          </div>
+          <button onclick="completeLesson(${courseId}, ${i}, ${course.lessons.length})" ${isCompleted ? 'disabled' : ''}>
+            ${isCompleted ? '✓ Completed' : 'Mark Complete'}
+          </button>
+        </div>
+        <div class="video-wrapper">
+          <iframe src="${lesson.video}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('course-detail-content').innerHTML = `
+    <h2>${course.title}</h2>
+    <p class="muted">${course.desc}</p>
+    <p class="muted">Instructor: ${course.instructor} • Level: ${course.level}</p>
+    
+    <div class="progress-bar" style="margin:20px 0">
+      <div class="progress-fill" style="width:${progress}%"></div>
+    </div>
+    <p class="muted">Progress: ${progress}% • ${completedLessons.length}/${course.lessons.length} lessons</p>
+    
+    ${progress === 100 ? `<div class="certificate-card">🎉 Certificate Available! <button onclick="earnCertificate(${courseId})">Download</button></div>` : ''}
+    
+    <h3 style="margin-top:32px">Course Content</h3>
+    ${lessonsHtml}
+  `;
+}
+
+function completeLesson(courseId, lessonIndex, totalLessons){
+  const user = getUser();
+  let completedLessons = JSON.parse(localStorage.getItem(`completed_${user}_${courseId}`) || '[]');
+  
+  if(!completedLessons.includes(lessonIndex)){
+    completedLessons.push(lessonIndex);
+    localStorage.setItem(`completed_${user}_${courseId}`, JSON.stringify(completedLessons));
+    
+    let progress = Math.round((completedLessons.length / totalLessons) * 100);
+    localStorage.setItem(`progress_${user}_${courseId}`, progress);
+    
+    openCourse(courseId);
+    renderProgress();
+    renderDashboard();
+  }
+}
+
+function earnCertificate(courseId){
+  const user = getUser();
+  let certs = JSON.parse(localStorage.getItem(`certs_${user}`) || '[]');
+  if(!certs.includes(courseId)){
+    certs.push(courseId);
+    localStorage.setItem(`certs_${user}`, JSON.stringify(certs));
+    alert('Certificate downloaded! Check your Profile.');
+    loadProfile();
+  }
+}
+
+// Progress
+function renderProgress(){
+  const user = getUser();
+  const enrolled = JSON.parse(localStorage.getItem(`enrolled_${user}`) || '[]');
+  const list = document.getElementById('progress-list');
+  
+  if(enrolled.length === 0){
+    list.innerHTML = `<p class="muted">No courses yet. Browse Courses tab to enroll!</p>`;
+    return;
+  }
+  
+  list.innerHTML = enrolled.map(id => {
+    const course = courses.find(c => c.id === id);
+    const progress = parseInt(localStorage.getItem(`progress_${user}_${id}`) || 0);
+    return `
+      <div class="progress-item card">
+        <div class="progress-info">
+          <div>
+            <b>${course.title}</b>
+            <p class="muted">${course.instructor}</p>
+          </div>
+          <span>${progress}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${progress}%"></div>
+        </div>
+        <button onclick="openCourse(${id})" style="margin-top:12px">Continue</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashboard(){
+  const user = getUser();
+  const enrolled = JSON.parse(localStorage.getItem(`enrolled_${user}`) || '[]');
+  const certs = JSON.parse(localStorage.getItem(`certs_${user}`) || '[]');
+  
+  document.getElementById('enrolled-count').innerText = enrolled.length;
+  document.getElementById('completed-count').innerText = enrolled.filter(id => 
+    parseInt(localStorage.getItem(`progress_${user}_${id}`) || 0) === 100
+  ).length;
+  document.getElementById('cert-count').innerText = certs.length;
+  
+  const continueGrid = document.getElementById('continue-grid');
+  if(enrolled.length > 0){
+    continueGrid.innerHTML = enrolled.slice(0,3).map(id => {
+      const course = courses.find(c => c.id === id);
+      return courseCard(course, enrolled);
+    }).join('');
+  }
+}
+
+// Profile
+function loadProfile(name = '', email = ''){
+  const user = getUser();
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const userData = users.find(u => u.email === user) || {name, email};
+  
+  document.getElementById('profile-name').innerText = userData.name;
+  document.getElementById('profile-email').innerText = userData.email;
+  document.getElementById('bio').value = localStorage.getItem(`bio_${user}`) || '';
+  document.getElementById('skills').value = localStorage.getItem(`skills_${user}`) || '';
+  
+  const photo = localStorage.getItem(`photo_${user}`);
+  if(photo) document.getElementById('avatar').src = photo;
+  
+  // Certificates
+  const certs = JSON.parse(localStorage.getItem(`certs_${user}`) || '[]');
+  document.getElementById('certificates').innerHTML = certs.length > 0 
+    ? certs.map(id => `<div class="badge">🏆 ${courses.find(c => c.id === id).title}</div>`).join('')
+    : '<p class="muted">Complete a course to earn certificates</p>';
+}
+
+function saveProfile(){
+  const user = getUser();
+  localStorage.setItem(`bio_${user}`, document.getElementById('bio').value);
+  localStorage.setItem(`skills_${user}`, document.getElementById('skills').value);
+  alert('Profile saved ✓');
+}
+
+document.getElementById('photoUpload').onchange = e => {
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById('avatar').src = reader.result;
+      localStorage.setItem(`photo_${getUser()}`, reader.result);
+    }
+    reader.readAsDataURL(file);
+  }
+};
+
+// Search
+function setupSearch(){
+  document.getElementById('searchInput').addEventListener('keyup', e => {
+    const term = e.target.value.toLowerCase();
+    document.querySelectorAll('.course-card').forEach(card => {
+      const title = card.dataset.title.toLowerCase();
+      const desc = card.dataset.desc.toLowerCase();
+      card.style.display = (title.includes(term) || desc.includes(term)) ? 'block' : 'none';
+    });
+  });
+}
+
+function getUser(){
+  return localStorage.getItem('currentUser');
+}
+</script>
+</body>
+</html>
